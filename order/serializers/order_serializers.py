@@ -10,6 +10,9 @@ class OrderSerializer(serializers.ModelSerializer):
         many=True
     )
     total = serializers.SerializerMethodField()
+    products_id = serializers.PrimaryKeyRelatedField(
+        queyset=Product.objects.all(), write_only=True, many=True
+    )
 
     class Meta:
         model = Order
@@ -17,3 +20,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, instance):
         return sum(p.price for p in instance.product.all())
+    
+    def create(self, validated_data):
+        product_data = validated_data.pop('products_id')
+        user_data = validated_data.pop('user')
+
+        order = Order.objects.create(user = user_data)
+        for product in product_data:
+            order.product.add(product)
+
+        return order
