@@ -1,24 +1,52 @@
-FROM python:3.11-slim
+FROM python:3.13-slim AS python-base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
     POETRY_HOME="/opt/poetry" \
-    PATH="/opt/poetry/bin:$PATH"
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1 \
+    PYSETUP_PATH="/opt/pysetup" \
+    VENV_PATH="/opt/pysetup/.venv"
 
-RUN apt-get update && apt-get install -y \
-    curl build-essential libpq-dev gcc python3-dev \
-    && curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
+# Instalar dependências do sistema
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+    curl \
+    build-essential \
+    libpq-dev \
+    gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    poetry --version
+
+RUN apt-get update && \
+    apt-get -y install libpq-dev gcc && \
+    pip install psycopg2
+
+# Configurar diretório de trabalho para instalação
+WORKDIR $PYSETUP_PATH
+
+# Copiar arquivos de dependências
+COPY pyproject.toml poetry.lock* ./
+
+# Instalar dependências
+RUN poetry install --no-root --without dev
+
+# Configurar diretório da aplicação
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock ./
+# Copiar código da aplicação
+COPY . /app/
 
-RUN poetry config virtualenvs.create false
-
-RUN poetry install --only main --no-root
-
-COPY . .
-
+# Expor porta
 EXPOSE 8000
 
+# Comando para executar a aplicação
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
