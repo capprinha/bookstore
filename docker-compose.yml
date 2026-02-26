@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: bookstore_dev
+      POSTGRES_PASSWORD: 123456
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      SQL_ENGINE: django.db.backends.postgresql
+      SQL_DATABASE: bookstore
+      SQL_USER: bookstore_dev
+      SQL_PASSWORD: 123456
+      SQL_HOST: db
+      SQL_PORT: 5432
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
