@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     strategy:
@@ -12,6 +13,7 @@ jobs:
         python-version: [3.8, 3.9]
 
     steps:
+
     - uses: actions/checkout@v3
 
     - name: Set up Python
@@ -21,13 +23,12 @@ jobs:
 
     - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-
-    - name: Add Poetry to PATH
-      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        python -m pip install --upgrade pip
+        python -m pip install pipx
+        pipx install poetry
 
     - name: Install dependencies
-      run: poetry install
+      run: poetry install --no-interaction --no-root
 
     - name: Run tests
       run: poetry run python manage.py test
